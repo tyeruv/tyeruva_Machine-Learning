@@ -1,0 +1,56 @@
+---
+title: "Assignment1_Sep14"
+author: "Tejaswini Yeruva"
+date: "2022-09-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Packages
+
+Packages that were installed for the below:
+
+```{r eval=TRUE}
+
+require(tidyverse)
+
+library(tidyverse)
+
+```
+### Dataset Source
+Dataset has been sourced from Data world.
+
+```{r Importing DataSet}
+travel_data <- read.csv("https://query.data.world/s/hsiafhxaakgh3yvwfxxk3dvkyrjhex", header=TRUE, stringsAsFactors=FALSE);
+
+print(travel_data)
+```
+### Statistics description
+Below is the summary of the dataset.
+```{r Descriptive}
+summary(travel_data)
+```
+### Transforming Variable in the Dataset
+Dataset has been sorted with Duration of Stay
+
+```{r Descriptive Statistics}
+travel_data_new <-travel_data[order(travel_data$Duration.of.stay),]
+print(travel_data_new)
+```
+
+### Box Plot and Scatter Plot
+Boxplot has been made with Duration of Stay and Scatter plot has been made with Duration of Stay and Total Transport costs.
+
+
+```{r Plots}
+boxplot(travel_data$Duration.of.stay, main='Duration of Stay',
+        col.axis = "darkgreen", col.lab = "darkgreen")
+
+plot(x = travel_data$Duration.of.stay, y = travel_data$Total.transport.costs, xlab = "Duration.of.stay",
+     ylab = "Total.transport.costs", main = "Cost VS Stay")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
