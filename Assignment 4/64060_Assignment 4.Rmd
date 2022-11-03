@@ -1,0 +1,173 @@
+---
+title: "ML Assignment 4"
+author: "Tejaswini Yeruva"
+date: "2022-11-02"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+#Loading the Required packages
+
+```{r}
+library(flexclust)
+library(cluster)
+library(tidyverse)
+library(factoextra) 
+library(FactoMineR)
+library(ggcorrplot)
+```
+
+a.Use only the numerical variables (1 to 9) to cluster the 21 firms. Justify the various choices made in conducting the cluster analysis, such as weights for different variables, the specific clustering algorithm(s) used, the number of clusters formed, and so on.
+
+## Loading the data
+
+```{r}
+getwd()
+setwd("C:/Users/tejar/OneDrive/Documents")
+Info<- read.csv("C:/Users/tejar/Downloads/Pharmaceuticals.csv")
+
+
+## Now selecting columns from 3 to 11 and storing the data in variable Info1
+
+Info1 <- Info[3:11]
+
+## Using head function to display the first 6 rows of data
+
+head(Info1)
+summary(Info1)
+
+```
+
+## All the variables are measured in different weights throughout the rows, and will scale the data in Info1 and save the scaled data in the Infoupdated dataframe. Calculating the distance between the rows of data and visualizing the distance matrix using get_dist and fviz_dist functions which are available in factoextra package.
+
+```{r}
+Infoupdated <- scale(Info1)
+row.names(Infoupdated) <- Info[,1]
+distance <- get_dist(Infoupdated)
+fviz_dist(distance)
+
+```
+
+## Now creating the correlation Matrix and printing to check the correlation among major variables
+
+```{r}
+corr <- cor(Infoupdated)
+ggcorrplot(corr, outline.color = "grey50", lab = TRUE, hc.order = TRUE, type = "full") 
+
+```
+
+## The Correlation Matrix reveals that ROA, ROE, Net Profit Margin, and Market Cap is high. 
+
+## By using  Principal Component Analysis will be finding out weightage of major variables in the data set. 
+## assuming best number of cluster is 5.
+
+```{r}
+pca <- PCA(Infoupdated)
+var <- get_pca_var(pca)
+fviz_pca_var(pca, col.var="contrib",
+             gradient.cols = c("grey","yellow","purple","red","blue"),ggrepel = TRUE ) + labs( title = "PCA Variable Variance")
+```
+
+## We can deduce from PCA Variable Variance that ROA,ROE, Net Profit Margin, Market Cap, and Asset Turnover contribute over 61% to the two PCA components/dimensions (Variables)and using elbow method to find optimal number of customers.
+
+```{r}
+set.seed(10)
+wss <- vector()
+for(i in 1:10) wss[i] <- sum(kmeans(Infoupdated,i)$withinss)
+plot(1:10, wss , type = "b" , main = paste('Cluster of Companies') , xlab = "Number of Clusters", ylab="wss")
+wss
+
+```
+
+## Got the same number as assumed, optimal cluster is at 5.
+
+## Silhouette Method
+## Finding best number of clusters.
+
+```{r}
+fviz_nbclust(Infoupdated, kmeans, method = "silhouette")
+
+```
+
+## This also shows the idealnumber of clusters is 5. Using k-means algorithm to cluster with 5.
+
+```{r}
+set.seed(1)
+k5 <- kmeans(Infoupdated, centers = 5, nstart = 25) # k = 5, number of restarts = 25
+k5$centers 
+k5$size  
+fviz_cluster(k5, data = Infoupdated) 
+
+```
+
+## kmeans clustering, using Manhattan Distance
+
+```{r}
+set.seed(1)
+k51 = kcca(Infoupdated, k=5, kccaFamily("kmedians"))
+k51
+#Using predict function.
+clusters_index <- predict(k51)
+dist(k51@centers)
+image(k51)
+points(Infoupdated, col=clusters_index, pch=19, cex=0.3)
+
+```
+
+b.Interpret the clusters with respect to the numerical variables used in forming the clusters Using Kmeans method to calculate Mean.
+
+```{r}
+Info1 %>% mutate(Cluster = k5$cluster) %>% group_by(Cluster) %>% summarise_all("mean")
+clusplot(Infoupdated,k5$cluster, main="Clusters",color = TRUE, labels = 2,lines = 0)
+
+```
+
+Companies are categorized into different clusters as follows:
+
+Cluster 1: ELN, MRX, WPI and AVE
+Cluster 2: AGN and PHA
+Cluster 3: AHM,WYE,BMY,AZN, LLY, ABT, NVS and SGP
+Cluster 4: BAY, CHTT and IVX
+Cluster 5: JNJ, MRK, PFE and GSK
+
+From the means of the cluster variables, it can be derived as follow:
+
+Cluster 1 has the fastest revenue growth, the highest Net Profit Margin, and the lowest PE ratio. It can be purchased or held in reserve..
+
+Cluster 2 PE ratio is very high 
+
+Cluster 3 has average risk 
+
+Cluster 4 Though it has a good PE ratio, it carries a very high risk , very very high leverage and low Net Profit margin , making it very risky to own. Revenue growth is also very low.
+
+Cluster 5 has a high market capitalization, return on investment, return on assets, asset turnover, and net profit margin. With a low PE ratio, the stock price is moderately valued and hence can be purchased and held evenue growth of 18.5% is good.
+
+c.Is there a pattern in the clusters with respect to the numerical variables (10 to 12)? (those not used informing the clusters)
+
+## plotting clusters against the variables to check for any patterns
+
+```{r}
+Info3 <- Info[12:14] %>% mutate(Clusters=k5$cluster)
+ggplot(Info3, mapping = aes(factor(Clusters), fill =Median_Recommendation))+geom_bar(position='dodge')+labs(x ='Clusters')
+ggplot(Info3, mapping = aes(factor(Clusters),fill = Location))+geom_bar(position = 'dodge')+labs(x ='Clusters')
+ggplot(Info3, mapping = aes(factor(Clusters),fill = Exchange))+geom_bar(position = 'dodge')+labs(x ='Clusters')
+
+```
+
+## Clusters and the variable Median Recommendation appear to follow a pattern.
+
+## Except for the fact that the bulk of the clusters/companies are listed on the NYSE and are based in the United States, there appears to be no discernible pattern among the clusters, locations, or exchanges.
+
+
+d.Provide an appropriate name for each cluster using any or all of the variables in the data set.
+
+Cluster 1: Best Buying
+Cluster 2: Highly Risky
+Cluster 3: Go for it 
+Cluster 4: Very Risky or Runaway 
+Cluster 5: Ideal to Own 
+
+
+
+
